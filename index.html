@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f5f2">
+  <title>TradeGuard | Mesa de operaciones</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1c2925;
+      --muted: #738079;
+      --line: #e3e8e3;
+      --canvas: #f3f5f2;
+      --paper: #fff;
+      --green: #18745b;
+      --green-soft: #e7f3ed;
+      --red: #bf5548;
+      --red-soft: #fbefed;
+      --amber: #aa711f;
+      --amber-soft: #fbf3e4;
+      --nav: #1d3029;
+      --mono: "DM Mono", monospace;
+      --sans: "Manrope", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); font: 13px/1.5 var(--sans); }
+    button, input, select { font: inherit; }
+    .app-shell { min-height: 100vh; display: grid; grid-template-columns: 226px minmax(0, 1fr); }
+    .sidebar { background: var(--nav); color: #dce6df; min-height: 100vh; padding: 25px 15px 18px; display: flex; flex-direction: column; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 31px; color: white; font-size: 17px; font-weight: 800; letter-spacing: 0; }
+    .brand-mark { width: 29px; height: 29px; border-radius: 8px; display: grid; place-items: center; background: #8ac6a8; color: #16392c; font-size: 15px; }
+    .desk-label { padding: 0 11px; color: #8fa39a; font: 10px var(--mono); text-transform: uppercase; letter-spacing: 0; margin-bottom: 10px; }
+    .nav-list { display: grid; gap: 4px; }
+    .nav-link { color: #b8c8bf; text-decoration: none; padding: 10px 11px; border-radius: 6px; display: flex; gap: 12px; align-items: center; font-weight: 600; font-size: 12px; }
+    .nav-link .bi { font-size: 15px; }
+    .nav-link:hover, .nav-link.active { background: #2b4439; color: #fff; }
+    .nav-link.active { box-shadow: inset 2px 0 #92d0ad; }
+    .nav-count { margin-left: auto; color: #c5d3ca; font: 10px var(--mono); }
+    .sidebar-bottom { margin-top: auto; }
+    .desk-status { margin: 0 7px 19px; padding: 12px; border: 1px solid #3a5147; border-radius: 6px; background: #243b31; }
+    .desk-status .label { color: #a9bdb1; font-size: 10px; }
+    .desk-status strong { display: block; margin-top: 4px; color: #e9f2ec; font: 11px var(--mono); }
+    .desk-status strong i { color: #74c89e; margin-right: 5px; }
+    .profile { display: flex; align-items: center; gap: 10px; border-top: 1px solid #3a5147; padding: 16px 8px 0; }
+    .avatar { height: 31px; width: 31px; background: #f0c783; color: #55421f; font-weight: 800; border-radius: 50%; display: grid; place-items: center; font-size: 10px; }
+    .profile-name { font-size: 11px; font-weight: 700; color: white; }
+    .profile-role { font-size: 10px; color: #9cb0a4; }
+    .main { min-width: 0; }
+    .topbar { height: 64px; background: var(--paper); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; }
+    .crumb { color: var(--muted); font-size: 11px; }
+    .crumb strong { color: var(--ink); font-weight: 700; }
+    .top-actions { display: flex; align-items: center; gap: 18px; }
+    .market-open { color: var(--green); display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; }
+    .market-open .pulse { width: 7px; height: 7px; border-radius: 50%; background: #39a476; box-shadow: 0 0 0 3px #e1f2e9; }
+    .icon-button { border: 0; background: none; color: #617068; position: relative; padding: 5px; font-size: 17px; }
+    .icon-button .dot { position: absolute; width: 6px; height: 6px; background: #cd6857; border: 1px solid white; border-radius: 50%; right: 3px; top: 3px; }
+    .content { padding: 26px 30px 35px; max-width: 1600px; margin: 0 auto; }
+    .page-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 15px; margin-bottom: 19px; }
+    .eyebrow { color: var(--green); text-transform: uppercase; font: 10px var(--mono); margin-bottom: 5px; }
+    h1 { font-size: 22px; letter-spacing: 0; margin: 0; font-weight: 800; }
+    .page-subtitle { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .clock-wrap { text-align: right; }
+    .clock-label { color: var(--muted); font-size: 10px; }
+    .clock-value { font: 12px var(--mono); font-weight: 500; }
+    .cutoff { margin-top: 2px; color: var(--amber); font-size: 10px; font-weight: 700; }
+    .cutoff .bi { margin-right: 4px; }
+    .market-strip { display: grid; grid-template-columns: repeat(4, 1fr); background: white; border: 1px solid var(--line); border-radius: 7px; margin-bottom: 18px; }
+    .market-cell { padding: 12px 16px; min-width: 0; border-right: 1px solid var(--line); }
+    .market-cell:last-child { border-right: 0; }
+    .market-name { color: var(--muted); font-size: 10px; }
+    .market-value { margin-top: 4px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font: 13px var(--mono); font-weight: 500; }
+    .market-change { color: var(--green); font: 10px var(--mono); white-space: nowrap; }
+    .layout-grid { display: grid; grid-template-columns: minmax(0, 1.48fr) minmax(300px, .82fr); gap: 18px; align-items: start; }
+    .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 19px; border-bottom: 1px solid var(--line); }
+    .panel-title { font-size: 13px; font-weight: 800; }
+    .panel-kicker { color: var(--muted); font-size: 10px; margin-top: 2px; }
+    .step-label { color: var(--muted); font: 10px var(--mono); }
+    .step-label strong { color: var(--green); }
+    .order-body { padding: 18px 19px 19px; }
+    .side-toggle { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: 6px; background: #f0f3f0; margin-bottom: 17px; }
+    .side-choice { border: 0; background: transparent; border-radius: 4px; height: 34px; color: #68746d; font-size: 11px; font-weight: 800; }
+    .side-choice.active.buy { background: var(--green); color: white; box-shadow: 0 2px 5px #18745b2a; }
+    .side-choice.active.sell { background: var(--red); color: white; box-shadow: 0 2px 5px #bf55482a; }
+    .form-label { display: flex; justify-content: space-between; color: #45544b; font-size: 10px; font-weight: 800; margin-bottom: 6px; }
+    .field-note { color: #89958d; font-size: 9px; font-weight: 500; }
+    .field-wrap { position: relative; }
+    .form-control, .form-select { min-height: 38px; border-color: #dce3dd; border-radius: 5px; font-size: 11px; color: var(--ink); box-shadow: none !important; }
+    .form-control:focus, .form-select:focus { border-color: #55a184; }
+    .instrument-input { padding-right: 35px; font-weight: 700; }
+    .field-search { position: absolute; top: 9px; right: 12px; color: #849087; }
+    .instrument-card { border: 1px solid #e1e8e1; border-radius: 5px; background: #f8faf8; padding: 11px 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin: 9px 0 16px; }
+    .instrument-name { font-size: 11px; font-weight: 800; }
+    .instrument-meta { margin-top: 3px; color: var(--muted); font-size: 9px; }
+    .instrument-meta span { margin: 0 4px; color: #c0c9c1; }
+    .ticker { font: 10px var(--mono); color: #67776d; text-align: right; }
+    .similar-alert { grid-column: 1 / -1; padding-top: 7px; border-top: 1px solid #e5eae5; color: var(--amber); font-size: 9px; }
+    .similar-alert i { margin-right: 4px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px 12px; }
+    .input-group-text { background: #f7f9f7; color: #69766e; font-size: 10px; border-color: #dce3dd; }
+    .account-flag { margin-top: 5px; color: var(--amber); font-size: 9px; }
+    .line-box { margin-top: 15px; border: 1px solid #dfe9e2; border-radius: 5px; background: #f7faf8; padding: 11px 12px; }
+    .line-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 10px; font-weight: 700; }
+    .line-head span:last-child { font: 10px var(--mono); }
+    .line-track { height: 5px; border-radius: 4px; margin: 8px 0 5px; background: #e3e9e4; overflow: hidden; }
+    .line-track > span { display: block; width: 63%; height: 100%; border-radius: 4px; background: #55a47d; }
+    .line-foot { color: var(--muted); font-size: 9px; display: flex; justify-content: space-between; }
+    .risk-note { display: flex; gap: 8px; border: 1px solid #f0dfbe; border-radius: 5px; background: #fdf9f0; padding: 9px 10px; color: #72562d; font-size: 9px; margin-top: 12px; }
+    .risk-note .bi { color: var(--amber); font-size: 12px; }
+    .risk-note strong { color: #614719; }
+    .form-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; }
+    .draft-note { color: var(--muted); font-size: 9px; }
+    .draft-note .bi { color: var(--green); margin-right: 3px; }
+    .btn-review { border: 0; border-radius: 5px; background: var(--ink); color: white; padding: 10px 15px; font-size: 10px; font-weight: 800; }
+    .btn-review:hover { background: #30453b; color: white; }
+    .btn-review .bi { margin-left: 7px; }
+    .summary-panel { margin-bottom: 17px; }
+    .summary-body { padding: 15px 17px; }
+    .exposure { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .exposure-label { color: var(--muted); font-size: 10px; }
+    .exposure-total { font: 17px var(--mono); font-weight: 500; margin-top: 2px; }
+    .exposure-change { color: var(--green); font: 10px var(--mono); }
+    .risk-meter { display: flex; height: 6px; gap: 3px; margin: 7px 0 6px; }
+    .risk-meter span { flex: 1; border-radius: 2px; background: #e7ece8; }
+    .risk-meter span:nth-child(-n+3) { background: #62ae85; }
+    .risk-meter span:nth-child(4) { background: #dfbd6a; }
+    .risk-captions { display: flex; justify-content: space-between; color: var(--muted); font-size: 9px; }
+    .limit-table { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 11px; }
+    .limit-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 10px; }
+    .limit-row span:first-child { color: #68766e; }
+    .limit-row strong { font: 10px var(--mono); font-weight: 500; }
+    .state-ok { color: var(--green); }
+    .orders-panel .panel-head { padding-bottom: 13px; }
+    .order-tabs { display: flex; gap: 15px; padding: 0 17px; border-bottom: 1px solid var(--line); }
+    .order-tab { border: 0; background: none; padding: 9px 0 8px; color: #7b867e; font-size: 9px; font-weight: 700; position: relative; white-space: nowrap; }
+    .order-tab.active { color: var(--green); }
+    .order-tab.active:after { content: ""; height: 2px; background: var(--green); position: absolute; bottom: -1px; left: 0; right: 0; }
+    .order-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; padding: 11px 17px; border-bottom: 1px solid #edf0ed; align-items: center; }
+    .order-row:last-child { border-bottom: 0; }
+    .order-symbol { font-size: 10px; font-weight: 800; }
+    .order-detail { color: var(--muted); font-size: 9px; margin-top: 2px; }
+    .order-right { text-align: right; }
+    .order-amount { font: 10px var(--mono); }
+    .badge-status { display: inline-flex; align-items: center; gap: 4px; border-radius: 3px; padding: 3px 5px; font-size: 8px; font-weight: 800; margin-top: 4px; }
+    .badge-status.sent { color: #3c7761; background: #e8f3ed; }
+    .badge-status.check { color: #986b24; background: #fbf2df; }
+    .badge-status.done { color: #68756c; background: #eef1ee; }
+    .empty-state { padding: 23px 15px; text-align: center; color: var(--muted); font-size: 10px; }
+    .empty-state .bi { font-size: 19px; display: block; margin-bottom: 6px; }
+    .modal-content { border: 0; border-radius: 8px; box-shadow: 0 20px 60px #13271e35; }
+    .modal-header { border-color: var(--line); padding: 17px 20px; }
+    .modal-title { font-size: 14px; font-weight: 800; }
+    .modal-body { padding: 18px 20px; }
+    .review-callout { display: flex; gap: 10px; background: var(--amber-soft); color: #70521f; border-radius: 5px; padding: 11px; font-size: 10px; margin-bottom: 15px; }
+    .review-grid { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+    .review-cell { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+    .review-cell:nth-child(odd) { border-right: 1px solid var(--line); }
+    .review-cell:nth-last-child(-n+2) { border-bottom: 0; }
+    .review-label { color: var(--muted); font-size: 9px; }
+    .review-value { font-size: 11px; font-weight: 800; margin-top: 3px; }
+    .review-value.big { font: 14px var(--mono); color: var(--green); }
+    .explicit-check { display: flex; align-items: flex-start; gap: 9px; padding: 13px 0 0; font-size: 10px; font-weight: 700; }
+    .explicit-check input { accent-color: var(--green); width: 15px; height: 15px; margin-top: 1px; flex: 0 0 auto; }
+    .modal-footer { padding: 13px 20px 17px; border-color: var(--line); }
+    .btn-send { background: var(--green); color: white; border: 0; border-radius: 5px; padding: 9px 14px; font-weight: 800; font-size: 10px; }
+    .btn-send:disabled { background: #aab8af; color: white; }
+    .toast-container { z-index: 1090; }
+    .toast { border: 1px solid #d8e6dc; box-shadow: 0 8px 28px #203a2a20; font-size: 11px; }
+    @media (max-width: 1050px) {
+      .app-shell { grid-template-columns: 68px minmax(0, 1fr); }
+      .sidebar { padding: 22px 9px 15px; align-items: center; }
+      .brand { padding: 0 0 30px; }
+      .brand-name, .desk-label, .nav-link span, .nav-count, .desk-status, .profile-copy { display: none; }
+      .nav-list { width: 100%; }
+      .nav-link { justify-content: center; padding: 11px 5px; }
+      .nav-link .bi { font-size: 17px; }
+      .profile { padding: 15px 0 0; }
+      .layout-grid { grid-template-columns: minmax(0, 1.15fr) minmax(270px, .85fr); }
+      .topbar { padding: 0 20px; }
+      .content { padding: 22px 20px 30px; }
+    }
+    @media (max-width: 760px) {
+      .app-shell { grid-template-columns: minmax(0,1fr); padding-bottom: 58px; }
+      .sidebar { position: fixed; z-index: 10; bottom: 0; left: 0; right: 0; min-height: 0; height: 58px; padding: 5px 10px; flex-direction: row; justify-content: center; background: #1d3029; }
+      .brand, .sidebar-bottom { display: none; }
+      .nav-list { display: flex; justify-content: space-around; align-items: center; max-width: 500px; }
+      .nav-link { width: 45px; height: 44px; }
+      .nav-link .bi { font-size: 18px; }
+      .topbar { height: 54px; padding: 0 15px; }
+      .top-actions { gap: 11px; }
+      .content { padding: 19px 14px 23px; }
+      .page-heading { align-items: flex-start; }
+      h1 { font-size: 19px; }
+      .clock-wrap { padding-top: 4px; }
+      .market-strip { grid-template-columns: 1fr 1fr; }
+      .market-cell { padding: 10px 12px; }
+      .market-cell:nth-child(2) { border-right: 0; }
+      .market-cell:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .layout-grid { grid-template-columns: 1fr; gap: 14px; }
+      .panel-head { padding: 14px 15px; }
+      .order-body { padding: 15px; }
+      .summary-panel { order: -1; }
+    }
+    @media (max-width: 420px) {
+      .market-open span:last-child { display: none; }
+      .crumb { font-size: 10px; }
+      .page-subtitle { max-width: 200px; }
+      .clock-label { font-size: 9px; }
+      .clock-value { font-size: 10px; }
+      .cutoff { font-size: 9px; }
+      .form-grid { gap: 11px 8px; }
+      .form-footer { align-items: flex-end; }
+      .btn-review { padding: 10px 11px; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegación principal">
+      <a class="brand text-decoration-none" href="#" aria-label="TradeGuard inicio">
+        <span class="brand-mark"><i class="bi bi-shield-check"></i></span><span class="brand-name">TradeGuard</span>
+      </a>
+      <div class="desk-label">Mesa de dinero</div>
+      <nav class="nav-list">
+        <a class="nav-link active" href="#orden" aria-current="page"><i class="bi bi-arrow-left-right"></i><span>Operar</span></a>
+        <a class="nav-link" href="#ordenes"><i class="bi bi-list-check"></i><span>Órdenes</span><span class="nav-count">08</span></a>
+        <a class="nav-link" href="#riesgo"><i class="bi bi-shield-lock"></i><span>Riesgo y límites</span></a>
+        <a class="nav-link" href="#ordenes"><i class="bi bi-journal-text"></i><span>Bitácora</span></a>
+        <a class="nav-link" href="#ordenes"><i class="bi bi-file-earmark-bar-graph"></i><span>Reportes</span></a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="desk-status"><div class="label">Conectividad de mercado</div><strong><i class="bi bi-circle-fill"></i> Todos los feeds activos</strong></div>
+        <div class="profile"><div class="avatar">MR</div><div class="profile-copy"><div class="profile-name">María Rojas</div><div class="profile-role">Operadora · Mesa FX</div></div></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb">Mesa de dinero <span class="mx-2">/</span> <strong>Nueva operación</strong></div>
+        <div class="top-actions">
+          <div class="market-open"><span class="pulse"></span><span>Mercado abierto</span></div>
+          <button class="icon-button" type="button" aria-label="Notificaciones"><i class="bi bi-bell"></i><span class="dot"></span></button>
+          <button class="icon-button" type="button" aria-label="Ayuda"><i class="bi bi-question-circle"></i></button>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="page-heading">
+          <div><div class="eyebrow">Miércoles, 07 octubre 2026</div><h1>Nueva operación</h1><div class="page-subtitle">Registra y valida la instrucción antes de enviarla al mercado.</div></div>
+          <div class="clock-wrap"><div class="clock-label">Hora local · Lima (UTC−5)</div><div class="clock-value" id="clock">10:42:18</div><div class="cutoff"><i class="bi bi-clock"></i>Cierre FX en <span id="countdown">02:17:42</span></div></div>
+        </div>
+
+        <section class="market-strip" aria-label="Indicadores de mercado">
+          <div class="market-cell"><div class="market-name">USD / PEN · Spot</div><div class="market-value">3.7285 <span class="market-change">+0.12%</span></div></div>
+          <div class="market-cell"><div class="market-name">EUR / USD · Spot</div><div class="market-value">1.1642 <span class="market-change">+0.08%</span></div></div>
+          <div class="market-cell"><div class="market-name">Tasa BCRP</div><div class="market-value">4.25% <span class="market-change">Sin cambio</span></div></div>
+          <div class="market-cell"><div class="market-name">Órdenes de hoy</div><div class="market-value"><span id="orderCount">24</span> <span class="market-change" style="color:#738079">· 2 en validación</span></div></div>
+        </section>
+
+        <div class="layout-grid">
+          <section class="panel" id="orden" aria-labelledby="order-title">
+            <div class="panel-head"><div><div class="panel-title" id="order-title">Captura de orden</div><div class="panel-kicker">Los campos marcados son obligatorios</div></div><div class="step-label"><strong>01</strong> / 03 · Captura</div></div>
+            <div class="order-body">
+              <div class="side-toggle" role="group" aria-label="Sentido de la operación">
+                <button type="button" class="side-choice active buy" data-side="buy">COMPRA</button>
+                <button type="button" class="side-choice" data-side="sell">VENTA</button>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label" for="instrument">Instrumento <span class="field-note">Búsqueda por nombre o ticker</span></label>
+                <div class="field-wrap"><input class="form-control instrument-input" id="instrument" value="Bono Soberano Perú 2031" autocomplete="off" aria-describedby="instrumentDetails"><i class="bi bi-search field-search"></i></div>
+                <div class="instrument-card" id="instrumentDetails">
+                  <div><div class="instrument-name">Bono Soberano Perú 2031</div><div class="instrument-meta">Gobierno del Perú <span>·</span> Deuda soberana <span>·</span> PEN</div></div>
+                  <div class="ticker">PERU 5.94 08/31<br><span style="color:#9aa59d">BVL · Renta fija</span></div>
+                  <div class="similar-alert"><i class="bi bi-exclamation-triangle"></i>Instrumento similar: Bono Soberano Perú 2030 · verifica el vencimiento.</div>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div>
+                  <label class="form-label" for="counterparty">Contraparte</label>
+                  <select class="form-select" id="counterparty"><option>Banco Andino S.A.</option><option>Financiera del Pacífico</option><option>Credicorp Capital</option></select>
+                </div>
+                <div>
+                  <label class="form-label" for="account">Cuenta destino (CCI)</label>
+                  <input class="form-control" id="account" inputmode="numeric" value="00219384001564012871" maxlength="20" aria-describedby="accountFlag">
+                  <div class="account-flag" id="accountFlag"><i class="bi bi-info-circle me-1"></i>Cuenta nueva · requiere verificación</div>
+                </div>
+                <div>
+                  <label class="form-label" for="amount">Monto nominal <span class="field-note">Confirmación requerida</span></label>
+                  <div class="input-group"><span class="input-group-text">PEN</span><input class="form-control" id="amount" inputmode="decimal" value="250,000.00" aria-label="Monto nominal en soles"></div>
+                </div>
+                <div>
+                  <label class="form-label" for="price">Precio / tasa</label>
+                  <div class="input-group"><input class="form-control" id="price" inputmode="decimal" value="98.4250"><span class="input-group-text">%</span></div>
+                </div>
+                <div>
+                  <label class="form-label" for="settlement">Fecha de liquidación</label>
+                  <input class="form-control" id="settlement" type="date" value="2026-10-09">
+                </div>
+                <div>
+                  <label class="form-label" for="commission">Comisión total <span class="field-note">Incluye custodia</span></label>
+                  <div class="input-group"><span class="input-group-text">PEN</span><input class="form-control" id="commission" value="185.00"></div>
+                </div>
+              </div>
+
+              <div class="line-box">
+                <div class="line-head"><span><i class="bi bi-link-45deg me-1" style="color:var(--green)"></i>Línea disponible · Banco Andino</span><span>PEN 1,250,000</span></div>
+                <div class="line-track"><span></span></div>
+                <div class="line-foot"><span>Utilizado: PEN 787,500</span><span>Disponible: PEN 462,500</span></div>
+              </div>
+              <div class="risk-note"><i class="bi bi-shield-exclamation"></i><div><strong>Revisión preventiva activa.</strong> Este instrumento requiere validación de riesgo antes de ejecución. No se enviará sin aprobación.</div></div>
+              <div class="form-footer"><div class="draft-note"><i class="bi bi-cloud-check"></i> Borrador guardado automáticamente</div><button class="btn-review" type="button" data-bs-toggle="modal" data-bs-target="#reviewModal">Revisar orden <i class="bi bi-arrow-right"></i></button></div>
+            </div>
+          </section>
+
+          <div>
+            <section class="panel summary-panel" id="riesgo" aria-labelledby="risk-title">
+              <div class="panel-head"><div><div class="panel-title" id="risk-title">Exposición y límites</div><div class="panel-kicker">Actualizado hace 1 s</div></div><span class="badge-status sent"><i class="bi bi-shield-check"></i> Dentro de límites</span></div>
+              <div class="summary-body">
+                <div class="exposure"><div><div class="exposure-label">Exposición utilizada</div><div class="exposure-total">PEN 2,340,800</div></div><span class="exposure-change">64.2% del límite</span></div>
+                <div class="risk-meter" aria-label="64 por ciento del límite utilizado"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                <div class="risk-captions"><span>PEN 0</span><span>Límite PEN 3.65 M</span></div>
+                <div class="limit-table">
+                  <div class="limit-row"><span>Límite por contraparte</span><strong class="state-ok">PEN 462,500 disponible</strong></div>
+                  <div class="limit-row"><span>Tope por operación</span><strong>PEN 1,000,000</strong></div>
+                  <div class="limit-row"><span>Precio vs. rango del día</span><strong class="state-ok">Dentro de rango</strong></div>
+                  <div class="limit-row"><span>Control de duplicidad</span><strong class="state-ok"><i class="bi bi-check-circle me-1"></i>Sin coincidencias</strong></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel orders-panel" id="ordenes" aria-labelledby="orders-title">
+              <div class="panel-head"><div><div class="panel-title" id="orders-title">Órdenes recientes</div><div class="panel-kicker">Actividad de hoy · 07 oct</div></div><a href="#ordenes" class="text-decoration-none" style="font-size:10px;color:var(--green);font-weight:800">Ver todas <i class="bi bi-arrow-up-right"></i></a></div>
+              <div class="order-tabs" role="tablist" aria-label="Filtrar órdenes">
+                <button type="button" class="order-tab active" data-filter="all">Todas (08)</button><button type="button" class="order-tab" data-filter="open">En curso (03)</button><button type="button" class="order-tab" data-filter="done">Finalizadas (05)</button>
+              </div>
+              <div id="orderList">
+                <div class="order-row" data-state="open"><div><div class="order-symbol">USD / PEN <span style="color:var(--green);font-size:8px">COMPRA</span></div><div class="order-detail">Banco Andino · TG-261007-024</div></div><div class="order-right"><div class="order-amount">USD 180,000</div><span class="badge-status check">En validación</span></div></div>
+                <div class="order-row" data-state="done"><div><div class="order-symbol">Bono Soberano 2031 <span style="color:var(--red);font-size:8px">VENTA</span></div><div class="order-detail">Financiera del Pacífico · TG-261007-023</div></div><div class="order-right"><div class="order-amount">PEN 95,000</div><span class="badge-status done">Ejecutada</span></div></div>
+                <div class="order-row" data-state="open"><div><div class="order-symbol">EUR / USD <span style="color:var(--green);font-size:8px">COMPRA</span></div><div class="order-detail">Credicorp Capital · TG-261007-022</div></div><div class="order-right"><div class="order-amount">EUR 75,000</div><span class="badge-status sent">En mercado</span></div></div>
+                <div class="order-row" data-state="done"><div><div class="order-symbol">USD / PEN <span style="color:var(--red);font-size:8px">VENTA</span></div><div class="order-detail">Banco Andino · TG-261007-021</div></div><div class="order-right"><div class="order-amount">USD 50,000</div><span class="badge-status done">Ejecutada</span></div></div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><div><h2 class="modal-title" id="reviewTitle">Confirma los datos de la orden</h2><div class="panel-kicker">Último control antes de enviar</div></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+        <div class="modal-body">
+          <div class="review-callout"><i class="bi bi-exclamation-triangle-fill"></i><div><strong>Esta orden pasará por validación manual.</strong><br>La ejecución queda pendiente de aprobación del oficial de riesgo.</div></div>
+          <div class="review-grid">
+            <div class="review-cell"><div class="review-label">Lado</div><div class="review-value" id="reviewSide">COMPRA</div></div>
+            <div class="review-cell"><div class="review-label">Instrumento</div><div class="review-value">Bono Soberano Perú 2031</div></div>
+            <div class="review-cell"><div class="review-label">Monto nominal</div><div class="review-value big" id="reviewAmount">PEN 250,000.00</div></div>
+            <div class="review-cell"><div class="review-label">Precio / tasa</div><div class="review-value">98.4250 %</div></div>
+            <div class="review-cell"><div class="review-label">Contraparte</div><div class="review-value">Banco Andino S.A.</div></div>
+            <div class="review-cell"><div class="review-label">Comisión total</div><div class="review-value">PEN 185.00</div></div>
+          </div>
+          <label class="explicit-check"><input type="checkbox" id="amountConfirm"><span>Confirmo que el monto y el sentido de la operación son correctos.</span></label>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Volver a editar</button><button type="button" class="btn-send" id="sendOrder" disabled>Confirmar y enviar <i class="bi bi-arrow-right ms-1"></i></button></div>
+      </div>
+    </div>
+  </div>
+  <div class="toast-container position-fixed bottom-0 end-0 p-3"><div id="orderToast" class="toast" role="status" aria-live="polite" aria-atomic="true"><div class="toast-body d-flex align-items-start gap-2"><i class="bi bi-check-circle-fill" style="color:var(--green);font-size:15px"></i><div><strong>Orden recibida</strong><div id="toastMessage" class="text-secondary mt-1"></div></div><button type="button" class="btn-close ms-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button></div></div></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const sideButtons = document.querySelectorAll('.side-choice');
+    let tradeSide = 'COMPRA';
+    sideButtons.forEach((button) => button.addEventListener('click', () => {
+      sideButtons.forEach((item) => item.classList.remove('active', 'buy', 'sell'));
+      tradeSide = button.dataset.side === 'buy' ? 'COMPRA' : 'VENTA';
+      button.classList.add('active', button.dataset.side);
+      document.getElementById('reviewSide').textContent = tradeSide;
+    }));
+    document.getElementById('amount').addEventListener('input', (event) => {
+      document.getElementById('reviewAmount').textContent = `PEN ${event.target.value || '0.00'}`;
+    });
+    document.getElementById('amountConfirm').addEventListener('change', (event) => {
+      document.getElementById('sendOrder').disabled = !event.target.checked;
+    });
+    document.querySelectorAll('.order-tab').forEach((tab) => tab.addEventListener('click', () => {
+      document.querySelectorAll('.order-tab').forEach((item) => item.classList.remove('active'));
+      tab.classList.add('active');
+      let visible = 0;
+      document.querySelectorAll('.order-row').forEach((row) => {
+        const show = tab.dataset.filter === 'all' || row.dataset.state === tab.dataset.filter;
+        row.hidden = !show;
+        if (show) visible += 1;
+      });
+      let empty = document.querySelector('.empty-state');
+      if (!visible && !empty) {
+        empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = '<i class="bi bi-inbox"></i>No hay órdenes en esta categoría.';
+        document.getElementById('orderList').append(empty);
+      } else if (visible && empty) empty.remove();
+    }));
+    document.getElementById('sendOrder').addEventListener('click', () => {
+      const orderId = `TG-261007-${String(Number(document.getElementById('orderCount').textContent) + 1).padStart(3, '0')}`;
+      document.getElementById('orderCount').textContent = Number(document.getElementById('orderCount').textContent) + 1;
+      document.getElementById('toastMessage').textContent = `${orderId} · ${tradeSide} · PEN ${document.getElementById('amount').value} · En validación`;
+      bootstrap.Modal.getInstance(document.getElementById('reviewModal')).hide();
+      bootstrap.Toast.getOrCreateInstance(document.getElementById('orderToast')).show();
+      document.getElementById('amountConfirm').checked = false;
+      document.getElementById('sendOrder').disabled = true;
+    });
+    document.getElementById('instrument').addEventListener('input', (event) => {
+      document.querySelector('.instrument-name').textContent = event.target.value || 'Busca un instrumento';
+    });
+    const clock = document.getElementById('clock');
+    let seconds = 10 * 3600 + 42 * 60 + 18;
+    let remaining = 2 * 3600 + 17 * 60 + 42;
+    const updateClock = () => {
+      seconds = (seconds + 1) % 86400;
+      remaining = Math.max(0, remaining - 1);
+      const format = (value) => String(value).padStart(2, '0');
+      clock.textContent = `${format(Math.floor(seconds / 3600))}:${format(Math.floor(seconds % 3600 / 60))}:${format(seconds % 60)}`;
+      document.getElementById('countdown').textContent = `${format(Math.floor(remaining / 3600))}:${format(Math.floor(remaining % 3600 / 60))}:${format(remaining % 60)}`;
+    };
+    setInterval(updateClock, 1000);
+  </script>
+</body>
+</html>
